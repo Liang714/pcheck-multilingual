@@ -102,7 +102,7 @@ def read_jsonl(pattern):
     rows = []
     for f in sorted(glob.glob(pattern)):
         with open(f, encoding="utf-8") as fh:
-            rows += [json.loads(l) for l in fh if l.strip()]
+            rows += [json.loads(line) for line in fh if line.strip()]
     return rows
 
 
@@ -354,7 +354,7 @@ def stage_translate(args):
             with torch.no_grad():
                 gen = model.generate(**enc, forced_bos_token_id=bos, num_beams=1,
                                      max_new_tokens=int(enc["input_ids"].shape[1] * 2 + 16))
-            for s, o in zip(batch, tok.batch_decode(gen, skip_special_tokens=True)):
+            for s, o in zip(batch, tok.batch_decode(gen, skip_special_tokens=True), strict=True):
                 cache[s] = o
             if (b // 48) % 20 == 0 or b + 48 >= len(todo):
                 json.dump(cache, open(path, "w", encoding="utf-8"), ensure_ascii=False)
@@ -380,7 +380,7 @@ def run_chat(llm, items, key_fn, conv_fn, max_tokens, out_path, meta_fn):
         outs = llm.chat([conv_fn(it) for it in batch], sp, use_tqdm=True)
         append_jsonl(out_path, [{"key": key_fn(it), **meta_fn(it), "output": o.outputs[0].text,
                                  "finish": o.outputs[0].finish_reason}
-                                for it, o in zip(batch, outs)])
+                                for it, o in zip(batch, outs, strict=True)])
         print(f"  saved {min(b + CHUNK, len(todo))}/{len(todo)}", flush=True)
 
 
@@ -534,7 +534,7 @@ def stage_eval(args):
         return checklist_score(r["output"], items, pc_eval) if items else None
 
     ck_out, ck_fail = pair_outcomes(read_jsonl(p("judge_ck.shard*.jsonl")), ck_fn)
-    for (iid, v), items in ck_items.items():  # checklist itself failed to parse
+    for (_iid, v), items in ck_items.items():  # checklist itself failed to parse
         if not items:
             ck_fail[v] += 1
 
@@ -567,7 +567,7 @@ def stage_eval(args):
         "",
         "Ties count as wrong (as in the repo's eval.py). Pairs whose outputs could not be parsed are left out;",
         "see 'Pairs scored'. A 'vs EN' interval that includes 0 means the difference could be noise.",
-        f"Plain-judge ties per version: " + ", ".join(f"{v} {S['plain'][v]['ties']}" for v in VERSIONS),
+        "Plain-judge ties per version: " + ", ".join(f"{v} {S['plain'][v]['ties']}" for v in VERSIONS),
         f"Profiles cut off at {GP_MAX_TOKENS} tokens: " + ", ".join(f"{v} {gp_cut[v]}" for v in VERSIONS),
     ]
     md = "\n".join(lines + notes)
