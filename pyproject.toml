@@ -1,0 +1,13 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 120
+# The notebook embeds pcheck_ml.py (checked here) plus Kaggle shell cells.
+extend-exclude = ["*.ipynb"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B"]
+# Prompt templates are kept verbatim on one line.
+ignore = ["E501"]

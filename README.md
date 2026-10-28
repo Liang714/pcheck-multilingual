@@ -22,6 +22,7 @@ It needs no training and runs on Kaggle's free GPUs, so the whole test costs $0.
 | --- | --- |
 | `pcheck_multilingual_kaggle.ipynb` | The notebook. Upload it to Kaggle and run it. |
 | `pcheck_ml.py` | The same pipeline code the notebook writes out. It's here so you can read it more easily. |
+| `tests/` | CPU-only tests for the parts that need no model |
 
 ## How to run
 
@@ -51,6 +52,17 @@ A 5-user smoke test runs first, so a setup problem shows up in about 20 minutes.
 - **Settings:** greedy decoding (temperature 0) so runs repeat. The repo uses 1.0.
 - **Metric:** a pair counts as correct when the chosen answer scores higher than the rejected one. Ties count as wrong, as in the repo's `eval.py`. Each accuracy comes with a 95% bootstrap confidence interval, and each language also gets a paired difference against English.
 - **How small a drop it can detect:** with about 377 pairs, a difference against English needs to be about 7 points or more to clearly stand out from noise.
+
+## Tests
+
+The parts that need no model run on CPU and in CI on every push:
+
+```bash
+pip install -r requirements-dev.txt
+ruff check . && pytest
+```
+
+They check that the rebuilt prompts match the originals, that only the history is translated, that every language version keeps the same conversations, that ties count as wrong, and that the notebook embeds the same `pcheck_ml.py` as this repository.
 
 ## What was tested before delivery
 
